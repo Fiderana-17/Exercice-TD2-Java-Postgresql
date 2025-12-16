@@ -5,7 +5,7 @@ Create table dish(
     id serial not null,
     name varchar(255) not null,
     dish_type dish_type_enum not null
-)
+);
 
 Create table Ingredient(
     id serial primary key,
