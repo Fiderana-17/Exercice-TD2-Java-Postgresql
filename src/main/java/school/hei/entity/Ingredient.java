@@ -1,4 +1,4 @@
-package school.hei;
+package school.hei.entity;
 
 public class Ingredient {
     private int id;
@@ -13,6 +13,9 @@ public class Ingredient {
         this.price = price;
         this.category = category;
         this.dish = dish;
+    }
+
+    public Ingredient(int id, String name, double price, CategoryEnum category) {
     }
 
     public String getDishName() {

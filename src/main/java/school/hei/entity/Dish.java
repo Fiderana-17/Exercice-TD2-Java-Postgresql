@@ -1,4 +1,4 @@
-package school.hei;
+package school.hei.entity;
 
 import java.util.List;
 import java.util.Objects;
