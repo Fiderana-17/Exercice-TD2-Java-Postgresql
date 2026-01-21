@@ -7,11 +7,16 @@ Create table Dish(
     dish_type dish_type_enum not null
 );
 
-Create table Ingredient(
-    id serial primary key,
-    name varchar(255) not null,
-    price numeric not null,
-    category category_enum not null,
+CREATE TABLE Ingredient (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    price NUMERIC NOT NULL,
+    category category_enum NOT NULL,
+    required_quantity NUMERIC,
     id_dish INT,
-    CONSTRAINT fk_dish FOREIGN KEY (id_dish) REFERENCES Dish(id) ON DELETE SET NULL
-)
+    CONSTRAINT fk_dish
+    FOREIGN KEY (id_dish)
+    REFERENCES Dish(id)
+    ON DELETE SET NULL
+);
+
