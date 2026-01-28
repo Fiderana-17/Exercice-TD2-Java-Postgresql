@@ -21,7 +21,7 @@ public class Dish {
 
     }
 
-    public Dish(int id, String name, String dishType, double price) {
+    public Dish(int id, String name, String dishType, double DishCost) {
     }
 
     public Integer getId() {
