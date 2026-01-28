@@ -1,49 +1,54 @@
-package school.hei.entity;
+package org.td.entity;
+
+import org.td.entity.Dish;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Objects;
 
 public class Ingredient {
-    private int id;
+    private Integer id;
     private String name;
-    private double price;
     private CategoryEnum category;
-    private Dish dish;
+    private Double price;
+    private List<StockMovement> stockMovementList;
 
-    public Ingredient(int id, String name, double price, CategoryEnum category, Dish dish) {
+    public List<StockMovement> getStockMovementList() {
+        return stockMovementList;
+    }
+
+    public void setStockMovementList(List<StockMovement> stockMovementList) {
+        this.stockMovementList = stockMovementList;
+    }
+
+    public Ingredient() {
+    }
+
+    public Ingredient(Integer id) {
+        this.id = id;
+    }
+
+    public Ingredient(Integer id, String name, CategoryEnum category, Double price) {
         this.id = id;
         this.name = name;
-        this.price = price;
         this.category = category;
-        this.dish = dish;
+        this.price = price;
     }
 
-    public Ingredient(int id, String name, double price, CategoryEnum category) {
+    public Integer getId() {
+        return id;
     }
 
-    public <T> Ingredient(int id, String name, double price, CategoryEnum category, T requiredQuantity, Dish dish) {
-    }
-
-    public Ingredient(int id, String name, double price, CategoryEnum category, Object requiredQuantity) {
-    }
-
-
-    public String getDishName() {
-        return dish == null ? null : dish.getName();
+    public void setId(Integer id) {
+        this.id = id;
     }
 
     public String getName() {
         return name;
-
     }
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public double getPrice() {
-        return price;
-    }
-
-    public void setPrice(double price) {
-        this.price = price;
     }
 
     public CategoryEnum getCategory() {
@@ -54,15 +59,50 @@ public class Ingredient {
         this.category = category;
     }
 
-    public Dish getDish() {
-        return dish;
+    public Double getPrice() {
+        return price;
     }
 
-    public void setDish(Dish dish) {
-        this.dish = dish;
+    public void setPrice(Double price) {
+        this.price = price;
     }
 
-    public Object getRequiredQuantity() {
-        return  null;
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        Ingredient that = (Ingredient) o;
+        return Objects.equals(id, that.id) && Objects.equals(name, that.name) && category == that.category && Objects.equals(price, that.price);
     }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, category, price);
+    }
+
+    @Override
+    public String toString() {
+        return "Ingredient{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", category=" + category +
+                ", price=" + price +
+                '}';
+    }
+
+    /* getStockValueAt method */
+    public StockValue getStockValueAt(Instant time){
+        List<StockMovement> concerned =  stockMovementList.stream().filter(stockMovement -> stockMovement.getCreationDatetime().isBefore(time)
+                        || stockMovement.getCreationDatetime().equals(time))
+                .toList();
+        double quantity = 0.0;
+        for (StockMovement sm : concerned) {
+            if(sm.getType() == MovementTypeEnum.IN){
+                quantity += sm.getValue().getQuantity();
+            } else {
+                quantity -= sm.getValue().getQuantity();
+            }
+        }
+        return new StockValue(quantity, concerned.getFirst().getValue().getUnit());
+    };
+
 }
