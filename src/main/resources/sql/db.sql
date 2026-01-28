@@ -1,22 +1,16 @@
---cree la database
-create database mini_dish_db;
+CREATE DATABASE mini_dish_db;
 
---cree l'user
-create user "mini_dish_db_manager" with password '123456';
+CREATE USER mini_dish_db_manager WITH PASSWORD '123456';
 
--- Privileges sur la base de donne
-GRANT connect on database mini_dish_db to mini_dish_db_manager;
+GRANT CONNECT ON DATABASE mini_dish_db TO mini_dish_db_manager;
 
+\c mini_dish_db
 
--- Privileges sur le schema public
-grant usage on schema public to mini_dish_db_manager;
+GRANT CREATE ON SCHEMA public TO mini_dish_db_manager;
 
--- permettre la creation des tables
-grant create on schema public to mini_dish_db_manager;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO mini_dish_db_manager;
 
--- donner les droit CRUD sur tous les tables
-grant select , insert , update , delete on all tables in schema public to mini_dish_db_manager;
---Ajout de la colonne required_quantity;
-ALTER TABLE ingredient
-    ADD COLUMN IF NOT EXISTS required_quantity DOUBLE PRECISION;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+    GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO mini_dish_db_manager;
 
