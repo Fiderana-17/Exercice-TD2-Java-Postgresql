@@ -178,6 +178,62 @@ public class DataRetriever {
 
     }
 
+    public Order saveOrder(Order orderToSave) {
+
+        try {
+            Order currentInDb = findOrderByReference(orderToSave.getReference());
+
+            if (currentInDb.getPaymentStatus() == PaymentStatusEnum.PAID) {
+                throw new RuntimeException("La commande a déjà été payée et donc ne peut plus être modifiée.");
+            }
+        } catch (RuntimeException e) {
+
+            if (!e.getMessage().contains("Order not found")) throw e;
+        }
+
+
+        String upsertOrderSql = """
+    INSERT INTO orders (id, reference, creation_datetime, payment_status, id_sale)
+    VALUES (?, ?, ?, ?::payment_status_enum, ?)
+    ON CONFLICT (id) DO UPDATE
+    SET payment_status = EXCLUDED.payment_status,
+        id_sale = EXCLUDED.id_sale
+    RETURNING id;
+    """;
+
+
+        try (Connection conn = new DBConnection().getConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(upsertOrderSql)) {
+                // Gestion de l'ID (Serial)
+                int orderId = (orderToSave.getId() != null) ? orderToSave.getId() : getNextSerialValue(conn, "Order", "id");
+                orderToSave.setId(orderId);
+
+                ps.setInt(1, orderId);
+                ps.setString(2, orderToSave.getReference());
+                ps.setTimestamp(3, Timestamp.from(orderToSave.getCreationDatetime()));
+                ps.setString(4, orderToSave.getPaymentStatus().name()); // UNPAID ou PAID
+
+                // Gestion de la FK Sale (Question 3)
+                if (orderToSave.getSale() != null) ps.setInt(5, orderToSave.getSale().getId());
+                else ps.setNull(5, Types.INTEGER);
+
+                ps.execute();
+
+                // Sauvegarde des lignes de commande (plats)
+                saveDishOrder(conn, orderToSave.getDishOrders(), orderId);
+
+                conn.commit();
+                return orderToSave;
+            } catch (SQLException e) {
+                conn.rollback();
+                throw new RuntimeException("Erreur lors de la sauvegarde de l'Order", e);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public List<Ingredient> createIngredients(List<Ingredient> newIngredients) {
         if (newIngredients == null || newIngredients.isEmpty()) {
             return List.of();
@@ -411,6 +467,7 @@ public class DataRetriever {
 
 
     public void saveDishOrder(Connection conn, List<DishOrder> dishOrders, int orderId) throws SQLException {
+
       if (dishOrders.isEmpty()){
           throw new RuntimeException("No dish order found");
       }
@@ -569,4 +626,66 @@ public class DataRetriever {
             ps.executeQuery();
         }
     }
+    public Sale createSaleFrom(Order order){
+        if(order == null){
+            throw new RuntimeException("Order is null");
+        }
+
+        if(order.getPaymentStatus() != PaymentStatusEnum.PAID){
+            throw new RuntimeException("Sale can only be created from a PAID order");
+        }
+
+        if(order.getSale() != null){
+            throw new RuntimeException("This order already has a sale");
+        }
+
+        String insertSaleSql = """
+        INSERT INTO sale (id, creation_datetime, id_order)
+        VALUES (?, ?, ?)
+        RETURNING id;
+    """;
+
+        String updateOrderSql = """
+        UPDATE "Order"
+        SET id_sale = ?
+        WHERE id = ?;
+    """;
+
+        try(Connection conn = new DBConnection().getConnection()){
+            conn.setAutoCommit(false);
+
+            int saleId;
+
+            try(PreparedStatement ps = conn.prepareStatement(insertSaleSql)){
+                ps.setInt(1, getNextSerialValue(conn, "sale", "id"));
+                ps.setTimestamp(2, Timestamp.from(Instant.now()));
+                ps.setInt(3, order.getId());
+
+                ResultSet rs = ps.executeQuery();
+                rs.next();
+                saleId = rs.getInt(1);
+            }
+
+            try(PreparedStatement ps2 = conn.prepareStatement(updateOrderSql)){
+                ps2.setInt(1, saleId);
+                ps2.setInt(2, order.getId());
+                ps2.executeUpdate();
+            }
+
+            conn.commit();
+
+            Sale sale = new Sale();
+            sale.setId(saleId);
+            sale.setCreationDatetime(Instant.now());
+            sale.setOrder(order);
+
+            order.setSale(sale);
+
+            return sale;
+
+        }catch(Exception e){
+            throw new RuntimeException(e);
+        }
+    }
+
 }

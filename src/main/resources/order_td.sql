@@ -20,3 +20,4 @@ ALTER TABLE "Order"
     ADD COLUMN id_sale INT UNIQUE;
 
 
+
