@@ -9,7 +9,7 @@
     <file url="file://$PROJECT_DIR$/src/main/resources/new_data.sql" dialect="GenericSQL" />
     <file url="file://$PROJECT_DIR$/src/main/resources/new_schema.sql" dialect="GenericSQL" />
     <file url="file://$PROJECT_DIR$/src/main/resources/order_td.sql" dialect="GenericSQL" />
-    <file url="file://$PROJECT_DIR$/src/main/resources/schema.sql" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/src/main/resources/schema.sql" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/src/main/resources/stock_movement.sql" dialect="GenericSQL" />
   </component>
 </project>
