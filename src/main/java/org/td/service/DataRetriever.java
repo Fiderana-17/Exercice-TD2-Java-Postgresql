@@ -497,84 +497,92 @@ public class DataRetriever {
       }
     };
 
-    public List<DishOrder> findDishOrdersByOrderReference(String reference){
+    // Retourne la liste des DishOrder associés à un Order via sa référence
+    public List<DishOrder> findDishOrdersByOrderReference(String reference) {
         String sql = """
-                select dso.id as dish_order_id, dso.id_dish as dish_order_id_dish,
-                       dso.quantity as dish_order_quantity , dso.id_order as dish_order_id_order
-                from "Order" o
-                join dishorder dso on o.id = dso.id_order
-                where reference = ?;
-                """;
-        DBConnection dbConnection = new DBConnection();
-        Connection connection = dbConnection.getConnection();
-        try(PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1, reference);
-            ResultSet rs = ps.executeQuery();
-            List<DishOrder> dishOrders = new ArrayList<>();
-            while(rs.next()){
-                DishOrder dishOrder = new DishOrder();
-                dishOrder.setId(rs.getInt("dish_order_id"));
-                Dish dish = findDishById(rs.getInt("dish_order_id_dish"));
-                dishOrder.setDish(dish);
-                dishOrder.setQuantity(rs.getInt("dish_order_quantity"));
-                dishOrders.add(dishOrder);
-            }
-            dbConnection.closeConnection(connection);
-            return dishOrders;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        finally {
-            dbConnection.closeConnection(connection);
-        }
-    }
-
-    private Order findOrderByReference(String reference){
-        String sql = """
-    select o.id, o.reference, o.creation_datetime, 
-           o.payment_status, o.id_sale
-    from "Order" o
-    where reference = ?;
+        SELECT dso.id AS dish_order_id, dso.id_dish AS dish_order_id_dish,
+               dso.quantity AS dish_order_quantity
+        FROM "Order" o
+        JOIN dishorder dso ON o.id = dso.id_order
+        WHERE o.reference = ?;
     """;
 
         DBConnection dbConnection = new DBConnection();
         Connection connection = dbConnection.getConnection();
-        try(PreparedStatement ps = connection.prepareStatement(sql)) {
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, reference);
             ResultSet rs = ps.executeQuery();
-            if(rs.next()){
-                List<DishOrder> dishOrders = new ArrayList<>();
-                dishOrders = findDishOrdersByOrderReference(reference);
+
+            List<DishOrder> dishOrders = new ArrayList<>();
+            while (rs.next()) {
+                DishOrder dishOrder = new DishOrder();
+                dishOrder.setId(rs.getInt("dish_order_id"));
+
+                // Récupère l'objet Dish complet
+                Dish dish = findDishById(rs.getInt("dish_order_id_dish"));
+                dishOrder.setDish(dish);
+
+                dishOrder.setQuantity(rs.getInt("dish_order_quantity"));
+                dishOrders.add(dishOrder);
+            }
+            return dishOrders;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            dbConnection.closeConnection(connection);
+        }
+    }
+
+    // Retourne l'objet Order complet avec ses DishOrders et Sale associés
+    public Order findOrderByReference(String reference) {
+        String sql = """
+        SELECT o.id, o.reference, o.creation_datetime, 
+               o.payment_status, o.id_sale
+        FROM "Order" o
+        WHERE o.reference = ?;
+    """;
+
+        DBConnection dbConnection = new DBConnection();
+        Connection connection = dbConnection.getConnection();
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, reference);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                // Récupération des DishOrders associés
+                List<DishOrder> dishOrders = findDishOrdersByOrderReference(reference);
+
+                // Création de l'objet Order
                 Order order = new Order();
                 order.setId(rs.getInt("id"));
                 order.setReference(rs.getString("reference"));
                 order.setCreationDatetime(rs.getTimestamp("creation_datetime").toInstant());
-                order.setPaymentStatus(
-                        PaymentStatusEnum.valueOf(rs.getString("payment_status"))
-                );
+                order.setPaymentStatus(PaymentStatusEnum.valueOf(rs.getString("payment_status")));
+                order.setDishOrders(dishOrders);
 
+                // Gestion de la relation avec Sale (si existante)
                 Integer saleId = rs.getObject("id_sale") == null ? null : rs.getInt("id_sale");
-
-                if(saleId != null){
+                if (saleId != null) {
                     Sale sale = new Sale();
                     sale.setId(saleId);
                     sale.setOrder(order);
                     order.setSale(sale);
                 }
 
-                order.setDishOrders(dishOrders);
-                dbConnection.closeConnection(connection);
                 return order;
             }
-            dbConnection.closeConnection(connection);
+
             throw new RuntimeException("Order not found with reference: " + reference);
+
         } catch (SQLException e) {
             throw new RuntimeException(e);
-        }
-        finally {
+        } finally {
             dbConnection.closeConnection(connection);
         }
     }
+
 
     private String getSerialSequenceName(Connection conn, String tableName, String columnName)
             throws SQLException {

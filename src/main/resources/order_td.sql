@@ -19,5 +19,6 @@ ALTER TABLE "Order"
 ALTER TABLE "Order"
     ADD COLUMN id_sale INT UNIQUE;
 
-
+INSERT INTO "Order" (reference, creation_datetime, payment_status, id_sale)
+VALUES ('201', NOW(), 'PAID', 1);
 
