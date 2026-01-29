@@ -1,8 +1,8 @@
-package school.hei.Util;
+package org.td.util;
 
-import school.hei.entity.CategoryEnum;
-import school.hei.entity.DishTypeEnum;
-import school.hei.entity.Ingredient;
+import org.td.entity.CategoryEnum;
+import org.td.entity.DishTypeEnum;
+import org.td.entity.Ingredient;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Util {
-
     public DishTypeEnum getDishType(String dishType) {
         return switch (dishType) {
             case "START" -> DishTypeEnum.START;
@@ -37,18 +36,10 @@ public class Util {
             ingredientList.add(new Ingredient(
                     rs.getInt("id"),
                     rs.getString("name"),
-                    rs.getDouble("price"),
-                    CategoryEnum.valueOf(rs.getString("category"))
+                    CategoryEnum.valueOf(rs.getString("category")),
+                    rs.getDouble("price")
             ));
         }
         return ingredientList;
     }
-
 }
-
-
-
-
-
-
-

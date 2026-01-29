@@ -1,5 +1,6 @@
 package org.td.entity;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -15,7 +16,15 @@ public class Dish {
     }
 
     public void setDishIngredientList(List<DishIngredient> dishIngredientList) {
-        this.dishIngredientList = dishIngredientList;
+        if(this.dishIngredientList != null && !this.dishIngredientList.isEmpty()){
+            this.dishIngredientList.clear();
+        }
+        this.dishIngredientList = dishIngredientList == null ? new ArrayList<>() : dishIngredientList;
+        for (DishIngredient dishIngredient : this.dishIngredientList) {
+            if(dishIngredient != null){
+            dishIngredient.setDish(this);
+            }
+        }
     }
 
     public Double getPrice() {

@@ -3,11 +3,11 @@ package org.td.entity;
 import java.util.Objects;
 
 public class DishIngredient {
-    private int id;
+    private Integer id;
     private double quantity_required;
     private UnitType unit;
-    private Ingredient ingredient;
     private Dish dish;
+    private Ingredient ingredient;
     public DishIngredient() {
 
     }
@@ -20,19 +20,13 @@ public class DishIngredient {
         this.dish = dish;
     }
 
-    public DishIngredient(int idIngredient, double quantityRequired, UnitType unit, Ingredient ingredient, Dish dish) {
-        quantity_required = quantityRequired;
-        this.unit = unit;
-        this.ingredient = ingredient;
-        this.dish = dish;
-    }
     public DishIngredient( double quantityRequired, UnitType unit, Ingredient ingredient, Dish dish) {
         quantity_required = quantityRequired;
         this.unit = unit;
         this.ingredient = ingredient;
         this.dish = dish;
     }
-    public DishIngredient( int id,double quantityRequired, UnitType unit) {
+    public DishIngredient( Integer id,double quantityRequired, UnitType unit) {
         this.id = id;
         quantity_required = quantityRequired;
         this.unit = unit;
@@ -46,7 +40,7 @@ public class DishIngredient {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
