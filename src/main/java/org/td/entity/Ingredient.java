@@ -1,8 +1,5 @@
 package org.td.entity;
 
-import org.td.entity.Dish;
-import org.td.util.UnitConverter;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
