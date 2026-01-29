@@ -9,7 +9,7 @@ create table if not exists DishIngredient (
     constraint ingredient_fk foreign key (id_ingredient) references ingredient(id)
 );
 
--- alter table dish rename column price to selling_price;
+alter table dish rename column price to selling_price;
 
 alter table public.ingredient drop column if exists id_dish;
 

@@ -9,15 +9,7 @@ public class Order {
     private String reference;
     private Instant creationDatetime;
     private List<DishOrder> dishOrders;
-    private TableOrder tableOrder;
 
-    public TableOrder getTableOrder() {
-        return tableOrder;
-    }
-
-    public void setTableOrder(TableOrder tableOrder) {
-        this.tableOrder = tableOrder;
-    }
 
     public Order(Integer id, String reference, Instant creationDatetime, List<DishOrder> dishOrders) {
         this.id = id;
