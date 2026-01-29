@@ -87,23 +87,6 @@ public class Ingredient {
                 '}';
     }
 
-    /* getStockValueAt method */
-    public StockValue getStockValueAt(Instant time){
-        List<StockMovement> concerned =  stockMovementList.stream().filter(stockMovement -> stockMovement.getCreationDatetime().isBefore(time)
-        || stockMovement.getCreationDatetime().equals(time))
-                .toList();
-        double quantity = 0.0;
-        for (StockMovement sm : concerned) {
-            double quantitySm = sm.getValue().getQuantity();
-            UnitType unitType = sm.getValue().getUnit();
-            double qtyInKg = UnitConverter.convertTo(name, unitType , UnitType.KG , quantitySm);
-            if(sm.getType() == MovementTypeEnum.IN){
-                quantity += qtyInKg;
-            } else {
-                quantity -= qtyInKg;
-            }
-        }
-        return new StockValue(quantity, UnitType.KG);
-    };
+
 
 }

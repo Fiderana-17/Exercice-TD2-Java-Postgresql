@@ -11,4 +11,12 @@ create table if not exists DishOrder(
                                         quantity int,
                                         foreign key (id_order) references "Order"(id),
                                         foreign key (id_dish) references dish(id)
-)
+);
+
+ALTER TABLE "Order"
+    ADD COLUMN payment_status payment_status NOT NULL DEFAULT 'UNPAID';
+
+ALTER TABLE "Order"
+    ADD COLUMN id_sale INT UNIQUE;
+
+

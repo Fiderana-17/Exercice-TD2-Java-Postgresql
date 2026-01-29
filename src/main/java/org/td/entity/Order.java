@@ -10,16 +10,22 @@ public class Order {
     private Instant creationDatetime;
     private List<DishOrder> dishOrders;
 
+    private PaymentStatusEnum paymentStatus;   // NEW
+    private Sale sale;                         // NEW
 
     public Order(Integer id, String reference, Instant creationDatetime, List<DishOrder> dishOrders) {
         this.id = id;
         this.reference = reference;
         this.creationDatetime = creationDatetime;
         this.dishOrders = dishOrders;
-    }
-    public Order() {
+        this.paymentStatus = PaymentStatusEnum.UNPAID; // valeur par défaut logique
     }
 
+    public Order() {
+        this.paymentStatus = PaymentStatusEnum.UNPAID; // valeur par défaut logique
+    }
+
+    // ---------------- GETTERS / SETTERS ----------------
 
     public Integer getId() {
         return id;
@@ -53,16 +59,52 @@ public class Order {
         this.dishOrders = dishOrders;
     }
 
+    public PaymentStatusEnum getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(PaymentStatusEnum paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+
+    public Sale getSale() {
+        return sale;
+    }
+
+    public void setSale(Sale sale) {
+        this.sale = sale;
+    }
+
+    // ---------------- MÉTHODES MÉTIER ----------------
+
+    /* Amount calcul */
+    public Double getTotalAmountWithoutVAT(){
+        double totalAmount = 0;
+        if(dishOrders != null){
+            for (DishOrder dishOrder : dishOrders) {
+                totalAmount += dishOrder.getDish().getPrice() * dishOrder.getQuantity();
+            }
+        }
+        return totalAmount;
+    }
+
+    public Double getTotalAmountWithVAT(){
+        return getTotalAmountWithoutVAT() + (getTotalAmountWithoutVAT() * 0.2);
+    }
+
+    // ---------------- OBJECT METHODS ----------------
+
     @Override
     public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) return true;
+        if (!(o instanceof Order)) return false;
         Order order = (Order) o;
-        return id == order.id && Objects.equals(reference, order.reference) && Objects.equals(creationDatetime, order.creationDatetime) && Objects.equals(dishOrders, order.dishOrders);
+        return Objects.equals(id, order.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, reference, creationDatetime, dishOrders);
+        return Objects.hash(id);
     }
 
     @Override
@@ -71,20 +113,8 @@ public class Order {
                 "id=" + id +
                 ", reference='" + reference + '\'' +
                 ", creationDatetime=" + creationDatetime +
-                ", dishOrders=" + dishOrders +
+                ", paymentStatus=" + paymentStatus +
+                ", sale=" + (sale != null ? sale.getId() : null) +
                 '}';
-    }
-
-    /* Amount calcul */
-    public Double getTotalAmountWithoutVAT(){
-        double totalAmount = 0;
-        for (DishOrder dishOrder : dishOrders) {
-            totalAmount += dishOrder.getDish().getPrice() * dishOrder.getQuantity();
-        }
-        return totalAmount;
-    }
-
-    public Double getTotalAmountWithVAT(){
-        return getTotalAmountWithoutVAT() + (getTotalAmountWithoutVAT() * 0.2);
     }
 }

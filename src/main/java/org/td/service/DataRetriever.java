@@ -390,78 +390,6 @@ public class DataRetriever {
         }
     }
 
-    /* Order operations */
-    public Order saveOrder(Order orderToSave) throws SQLException {
-        DBConnection dbConnection = new DBConnection();
-        Connection connection = dbConnection.getConnection();
-
-        try {
-            connection.setAutoCommit(false);
-
-            TableOrder tableOrder = orderToSave.getTableOrder();
-            if (tableOrder != null) {
-                Table table = tableOrder.getTable();
-                if (!isTableAvailable(connection, table.getId(), tableOrder.getArrivalDatetime(), tableOrder.getDepartureDatetime())) {
-                    List<Table> availableTables = getAvailableTables(connection, tableOrder.getArrivalDatetime(), tableOrder.getDepartureDatetime());
-                    String available = availableTables.stream()
-                            .map(t -> String.valueOf(t.getNumber()))
-                            .collect(Collectors.joining(", "));
-                    throw new RuntimeException(
-                            "Table " + table.getNumber() + " is not available at the requested time. " +
-                                    (available.isEmpty() ? "No tables available." : "Available tables: " + available)
-                    );
-                }
-
-            }
-
-            for (DishOrder dishOrder : orderToSave.getDishOrders()) {
-                for (DishIngredient dishIng : dishOrder.getDish().getDishIngredientList()) {
-                    double requiredQuantity = UnitConverter.convertTo(
-                            dishIng.getIngredient().getName(),
-                            dishIng.getUnit(),
-                            UnitType.KG,
-                            dishIng.getQuantity_required()
-                    ) * dishOrder.getQuantity();
-
-                    Ingredient ingredient = findIngredientById(connection, dishIng.getIngredient().getId());
-                    double availableQuantity = ingredient.getStockValueAt(Instant.now()).getQuantity();
-                    if (availableQuantity < requiredQuantity) {
-                        throw new RuntimeException("Insufficient stock for ingredient: " + ingredient.getName());
-                    }
-                }
-            }
-
-            int orderId = orderToSave.getId() != null ? orderToSave.getId() : getNextSerialValue(connection, "Order", "id");
-            String insertOrderSql = """
-            insert into "Order" (id, reference, creation_datetime, id_table, installation_time, departure_time)
-            values (?, ?, ?, ?, ?, ?)
-            """;
-            try (PreparedStatement ps = connection.prepareStatement(insertOrderSql)) {
-                ps.setInt(1, orderId);
-                ps.setString(2, orderToSave.getReference());
-                ps.setTimestamp(3, Timestamp.from(orderToSave.getCreationDatetime()));
-                if (tableOrder != null) {
-                    ps.setInt(4, tableOrder.getTable().getId());
-                    ps.setTimestamp(5, Timestamp.from(tableOrder.getArrivalDatetime()));
-                    ps.setTimestamp(6, Timestamp.from(tableOrder.getDepartureDatetime()));
-                } else {
-                    ps.setNull(4, Types.INTEGER);
-                    ps.setNull(5, Types.TIMESTAMP);
-                    ps.setNull(6, Types.TIMESTAMP);
-                }
-                ps.executeUpdate();
-            }
-            saveDishOrder(connection, orderToSave.getDishOrders(), orderId);
-            connection.commit();
-            return orderToSave;
-        } catch (SQLException e) {
-            connection.rollback();
-            throw new RuntimeException(e);
-        } finally {
-            dbConnection.closeConnection(connection);
-        }
-    }
-
     private boolean isTableAvailable(Connection conn, int tableId, Instant arrival, Instant departure) throws SQLException {
         String sql = """
         select count(*)
@@ -478,93 +406,6 @@ public class DataRetriever {
                 rs.next();
                 return rs.getInt(1) == 0;
             }
-        }
-    }
-
-    private List<Table> getAvailableTables(Connection conn, Instant arrival, Instant departure) throws SQLException {
-        String sql = """
-        select t.id, t.number
-        from "table" t
-        where t.id not in (
-            select id_table
-            from "Order"
-            where installation_time < ? and departure_time > ?
-        )
-        """;
-
-        List<Table> availableTables = new ArrayList<>();
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setTimestamp(1, Timestamp.from(departure));
-            ps.setTimestamp(2, Timestamp.from(arrival));
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    Table table = new Table();
-                    table.setId(rs.getInt("id"));
-                    table.setNumber(rs.getInt("number"));
-                    availableTables.add(table);
-                }
-            }
-        }
-        return availableTables;
-    }
-
-    private void saveTableOrder(Connection conn, TableOrder tableOrder, int orderId) throws SQLException {
-        int tableOrderId = tableOrder.getId() != null ? tableOrder.getId() : getNextSerialValue(conn, "tableorder", "id");
-        String sql = """
-        insert into tableorder (id, id_order, id_table)
-        values (?, ?, ?)
-        on conflict (id) do update
-        set id_order = EXCLUDED.id_order,
-            id_table = EXCLUDED.id_table
-        """;
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, tableOrderId);
-            ps.setInt(2, orderId);
-            ps.setInt(3, tableOrder.getTable().getId());
-            ps.executeUpdate();
-        }
-    }
-
-    public TableOrder createTableOrder(TableOrder tableOrderToSave) throws SQLException {
-        DBConnection dbConnection = new DBConnection();
-        Connection connection = dbConnection.getConnection();
-
-        try {
-            connection.setAutoCommit(false);
-
-            Table table = tableOrderToSave.getTable();
-            Instant arrival = tableOrderToSave.getArrivalDatetime();
-            Instant departure = tableOrderToSave.getDepartureDatetime();
-
-            if (!isTableAvailable(connection, table.getId(), arrival, departure)) {
-                List<Table> availableTables = getAvailableTables(connection, arrival, departure);
-                String available = availableTables.stream()
-                        .map(t -> String.valueOf(t.getNumber()))
-                        .collect(Collectors.joining(", "));
-                throw new RuntimeException(
-                        "Table " + table.getNumber() + " is not available at the requested time. " +
-                                (available.isEmpty() ? "No tables available." : "Available tables: " + available)
-                );
-            }
-
-
-            int tableOrderId = tableOrderToSave.getId() != null ? tableOrderToSave.getId() : getNextSerialValue(connection, "tableorder", "id");
-            String sql = "insert into tableorder (id_order, id_table) values (?, ?)";
-            try (PreparedStatement ps = connection.prepareStatement(sql)) {
-                ps.setInt(1, tableOrderId);
-                ps.setInt(2, table.getId());
-                ps.executeUpdate();
-            }
-
-            connection.commit();
-
-            tableOrderToSave.setId(tableOrderId);
-            return tableOrderToSave;
-        } catch (SQLException e) {
-            connection.rollback();
-            throw new RuntimeException(e);
-        } finally {
-            dbConnection.closeConnection(connection);
         }
     }
 
@@ -633,10 +474,12 @@ public class DataRetriever {
 
     private Order findOrderByReference(String reference){
         String sql = """
-                select o.id, o.reference, o.creation_datetime
-                from "Order" o
-                where reference = ?;
-                """;
+    select o.id, o.reference, o.creation_datetime, 
+           o.payment_status, o.id_sale
+    from "Order" o
+    where reference = ?;
+    """;
+
         DBConnection dbConnection = new DBConnection();
         Connection connection = dbConnection.getConnection();
         try(PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -649,6 +492,19 @@ public class DataRetriever {
                 order.setId(rs.getInt("id"));
                 order.setReference(rs.getString("reference"));
                 order.setCreationDatetime(rs.getTimestamp("creation_datetime").toInstant());
+                order.setPaymentStatus(
+                        PaymentStatusEnum.valueOf(rs.getString("payment_status"))
+                );
+
+                Integer saleId = rs.getObject("id_sale") == null ? null : rs.getInt("id_sale");
+
+                if(saleId != null){
+                    Sale sale = new Sale();
+                    sale.setId(saleId);
+                    sale.setOrder(order);
+                    order.setSale(sale);
+                }
+
                 order.setDishOrders(dishOrders);
                 dbConnection.closeConnection(connection);
                 return order;
