@@ -15,5 +15,7 @@ public class Main {
         StockValue sv = dr.getStockValueAt(Instant.now(), 1);
         System.out.println("Stock = " + sv.getQuantity() + " " + sv.getUnit());
 
+        System.out.println("Dish cost = " + dr.getDishCost(1));
+
     }
 }
