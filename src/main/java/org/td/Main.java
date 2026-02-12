@@ -9,14 +9,11 @@ import java.util.ArrayList;
 public class Main {
 
     public static void main(String[] args) {
-        DataRetriever data = new DataRetriever();
+        DataRetriever dr = new DataRetriever();
 
-        // Récupère l'objet Order complet
-        String reference = "201";
-        Order order = data.findOrderByReference(reference);
+// Stock à un instant T
+        StockValue sv = dr.getStockValueAt(Instant.now(), 1);
+        System.out.println("Stock = " + sv.getQuantity() + " " + sv.getUnit());
 
-        System.out.println("Order : " + order);
-        System.out.println("DishOrders : " + order.getDishOrders());
     }
-
 }
