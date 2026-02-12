@@ -17,5 +17,7 @@ public class Main {
 
         System.out.println("Dish cost = " + dr.getDishCost(1));
 
+        System.out.println("Gross margin = " + dr.getGrossMargin(1));
+
     }
 }

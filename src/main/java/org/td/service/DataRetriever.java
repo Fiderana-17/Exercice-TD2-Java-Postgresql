@@ -765,6 +765,35 @@ public class DataRetriever {
         }
     }
 
+    public Double getGrossMargin(Integer dishId) {
+        String sql = """
+        SELECT 
+            d.selling_price - SUM(di.quantity_required * i.price) AS gross_margin
+        FROM dish d
+        JOIN dishingredient di ON d.id = di.id_dish
+        JOIN ingredient i ON di.id_ingredient = i.id
+        WHERE d.id = ?
+        GROUP BY d.selling_price;
+    """;
+
+        try (Connection conn = new DBConnection().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, dishId);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                return rs.getDouble("gross_margin");
+            }
+
+            return 0.0;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
 
 
 }
