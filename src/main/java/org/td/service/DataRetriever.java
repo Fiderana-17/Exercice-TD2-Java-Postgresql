@@ -793,7 +793,58 @@ public class DataRetriever {
         }
     }
 
+    public void getStockStatsByPeriod(
+            String periodicity,   // DAY, WEEK, MONTH
+            Instant start,
+            Instant end
+    ) {
 
+        String sql = """
+        SELECT 
+            sm.id_ingredient,
+            i.name AS ingredient_name,
+            DATE_TRUNC(?, sm.creation_datetime) AS period,
+            SUM(
+                CASE 
+                    WHEN sm.type = 'IN' THEN sm.quantity
+                    WHEN sm.type = 'OUT' THEN -sm.quantity
+                    ELSE 0
+                END
+            ) AS stock_value
+        FROM stockmovement sm
+        JOIN ingredient i ON sm.id_ingredient = i.id
+        WHERE sm.creation_datetime BETWEEN ? AND ?
+        GROUP BY sm.id_ingredient, ingredient_name, period
+        ORDER BY sm.id_ingredient, period;
+    """;
 
+        try (Connection conn = new DBConnection().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, periodicity);   // 'day' | 'week' | 'month'
+            ps.setTimestamp(2, Timestamp.from(start));
+            ps.setTimestamp(3, Timestamp.from(end));
+
+            ResultSet rs = ps.executeQuery();
+
+            System.out.println("=== STOCK STATS ===");
+            while (rs.next()) {
+                int idIng = rs.getInt("id_ingredient");
+                String name = rs.getString("ingredient_name");
+                Timestamp period = rs.getTimestamp("period");
+                double value = rs.getDouble("stock_value");
+
+                System.out.println(
+                        "Ingredient: " + name +
+                                " | ID: " + idIng +
+                                " | Period: " + period.toLocalDateTime() +
+                                " | Stock: " + value
+                );
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
 }

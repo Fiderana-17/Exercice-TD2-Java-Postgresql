@@ -19,5 +19,10 @@ public class Main {
 
         System.out.println("Gross margin = " + dr.getGrossMargin(1));
 
+        dr.getStockStatsByPeriod(
+                "day",
+                Instant.parse("2026-01-01T00:00:00Z"),
+                Instant.parse("2026-01-05T23:59:59Z")
+        );
     }
 }
